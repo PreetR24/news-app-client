@@ -14,7 +14,7 @@ const News = ({ newsKey, pageSize, country, category = 'general' }) => {
     const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
 
     const fetchNews = useCallback(async () => {
-        const BASE_URL = "https://news-app-server-seven.vercel.app/api";
+        const BASE_URL = "https://news-app-server-pink.vercel.app/";
         setLoading(true);
         try {
             const { data } = await axios.get(BASE_URL, {
