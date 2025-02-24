@@ -1,83 +1,86 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import NewsItem from './NewsItem';
 import Spinner from './Spinner';
-import PropTypes from 'prop-types';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import axios from 'axios';
 
-const News = ({ newsKey, pageSize, country, category = 'general' }) => {
+const News = () => {
+    const { country, category, searchUsing } = useParams();
     const [articles, setArticles] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
-    const [totalResults, setTotalResults] = useState(0);
+    const [loading, setLoading] = useState(false); // Prevent re-triggering spinner
+    const [initialLoading, setInitialLoading] = useState(true); // Show spinner only on first fetch
+    const [nextPage, setNextPage] = useState(null);
+    const [nonews, setNonews] = useState(false);
 
-    const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
-
-    const fetchNews = useCallback(async () => {
-        const BASE_URL = "https://news-app-server-pink.vercel.app/";
-        setLoading(true);
+    const fetchNews = async (useNextPage = false) => {
         try {
-            const { data } = await axios.get(BASE_URL, {
-                params: { country, category, page, pageSize }
-            });
-            setArticles(prev => page === 1 ? data.articles : [...prev, ...data.articles]);
-            setTotalResults(data.totalResults);
+            if (useNextPage) setLoading(true);
+            else setInitialLoading(true);
+
+            const params = {};
+            if (useNextPage && nextPage) {
+                params.nextPage = nextPage;
+            }
+
+            let apiUrl = `http://localhost:5000/`;
+            if (country) apiUrl = `http://localhost:5000/${country}`;
+            if (country && category !== undefined) apiUrl = `http://localhost:5000/${country}/${category}`;
+            if (searchUsing) apiUrl = `http://localhost:5000/search/${searchUsing}`;
+
+            const response = await axios.get(apiUrl, { params });
+
+            if (!response.data.results || response.data.results.length === 0) {
+                setNonews(true);
+                return;
+            }
+
+            setArticles(prev => useNextPage ? [...prev, ...response.data.results] : response.data.results);
+            setNextPage(response.data.nextPage || null);
         } catch (error) {
-            console.error('Error fetching data from server:', error);
+            console.error("Error fetching news:", error);
+        } finally {
+            if (useNextPage) setLoading(false);
+            setInitialLoading(false);
         }
-        setLoading(false);
-    }, [country, category, pageSize, page]);
+    };
 
     useEffect(() => {
-        fetchNews();
-    }, [fetchNews]);
-
-    useEffect(() => {
-        document.title = `${capitalizeFirstLetter(category)} - NewsPulse`;
         setArticles([]);
-        setPage(1);
-    }, [category, country]);
-
-    const fetchMoreData = () => setPage(prevPage => prevPage + 1);
+        setNextPage(null);
+        setNonews(false);
+        fetchNews(false);
+    }, [country, category, searchUsing]);
 
     return (
-        <>
-            <h1 className="text-center" style={{ margin: '70px 0px 0px 0px' }}>
-                NewsPulse - Top {capitalizeFirstLetter(category)} Headlines
-            </h1>
-            {loading && <Spinner />}
+        <div className="container">
+            <h2 className="my-4 text-center">Showing News</h2>
+
+            {initialLoading && <Spinner />} {/* Show spinner only during the first fetch */}
+
             <InfiniteScroll
                 dataLength={articles.length}
-                next={fetchMoreData}
-                hasMore={articles.length !== totalResults}
-                loader={<Spinner />}
+                next={() => fetchNews(true)}
+                hasMore={!!nextPage}
+                loader={loading && <Spinner />}  // Only show spinner when fetching more
+                endMessage={nonews ? <p style={{ textAlign: "center", marginTop: "20px" }}>No new news</p> : null}
             >
-                <div className="container">
-                    <div className="row">
-                        {articles.map((element) => (
-                            <div className="col-md-4" key={element.url}>
-                                <NewsItem
-                                    title={element.title || ''}
-                                    description={element.description || ''}
-                                    imageUrl={element.urlToImage}
-                                    newsUrl={element.url}
-                                    author={element.author}
-                                    date={element.publishedAt}
-                                    source={element.source.name}
-                                />
-                            </div>
-                        ))}
-                    </div>
+                <div className="row">
+                    {articles.map((article, index) => (
+                        <div key={index} className="col-md-4">
+                            <NewsItem
+                                title={article.title}
+                                description={article.description}
+                                imageUrl={article.image_url || "https://via.placeholder.com/150"}
+                                newsUrl={article.link}
+                                date={article.pubDate}
+                            />
+                        </div>
+                    ))}
                 </div>
             </InfiniteScroll>
-        </>
+        </div>
     );
-};
-
-News.propTypes = {
-    country: PropTypes.string,
-    pageSize: PropTypes.number,
-    category: PropTypes.string
 };
 
 export default News;
