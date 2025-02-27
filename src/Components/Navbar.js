@@ -18,6 +18,13 @@ function Navbar() {
         setSearchUsing(event.target.value);
     }
 
+    function closeNavbar() {
+        const navbar = document.getElementById("navbarNav");
+        if (navbar.classList.contains("show")) {
+            navbar.classList.remove("show");
+        }
+    }
+
     return (
         <nav className="navbar navbar-expand-lg navbar-dark bg-dark p-3 fixed-top">
             <div className="container-fluid">
@@ -41,8 +48,9 @@ function Navbar() {
                                 to={`/search/${searchUsing}`} 
                                 className="btn btn-primary m-2"
                                 onClick={() => {
-                                    setCountry("in"); // Reset country
-                                    setCategory("none"); // Reset category
+                                    setCountry("in");
+                                    setCategory("none");
+                                    closeNavbar();
                                 }}
                             >
                                 Search News
@@ -93,7 +101,10 @@ function Navbar() {
                             <Link
                                 to={`/${country}${category !== 'none' ? `/${category}` : ''}`} 
                                 className="btn btn-primary m-2"
-                                onClick={() => setSearchUsing("")} // Clear search query when using country/category
+                                onClick={() => {
+                                    setSearchUsing("");
+                                    closeNavbar();
+                                }}
                             >
                                 Fetch News
                             </Link>

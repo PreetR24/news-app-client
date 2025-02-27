@@ -23,10 +23,11 @@ const News = () => {
                 params.nextPage = nextPage;
             }
 
-            let apiUrl = `http://localhost:5000/`;
-            if (country) apiUrl = `http://localhost:5000/${country}`;
-            if (country && category !== undefined) apiUrl = `http://localhost:5000/${country}/${category}`;
-            if (searchUsing) apiUrl = `http://localhost:5000/search/${searchUsing}`;
+            const base_url = process.env.REACT_APP_NEWS_BASE_URL;
+            let apiUrl = `${base_url}`;
+            if (country) apiUrl = `${base_url}/${country}`;
+            if (country && category !== undefined) apiUrl = `${base_url}/${country}/${category}`;
+            if (searchUsing) apiUrl = `${base_url}/search/${searchUsing}`;
 
             const response = await axios.get(apiUrl, { params });
 
