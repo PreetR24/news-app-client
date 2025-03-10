@@ -47,10 +47,16 @@ const News = () => {
     };
 
     useEffect(() => {
+        const abortController = new AbortController();
+        
         setArticles([]);
         setNextPage(null);
         setNonews(false);
         fetchNews(false);
+
+        return () => {
+            abortController.abort(); // Clean up and abort any ongoing request if the component unmounts
+        };
     }, [country, category, searchUsing]);
 
     return (
